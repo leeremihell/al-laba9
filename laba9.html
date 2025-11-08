@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BFS та DFS — покроковий обхід графа</title>
+<style>
+  body {
+    background: #0f172a;
+    color: #f8fafc;
+    font-family: Arial, sans-serif;
+    margin: 0;
+    display: flex;
+    height: 100vh;
+  }
+  .panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-right: 2px solid #1e293b;
+  }
+  .panel:last-child { border-right: none; }
+  svg {
+    background: #1e293b;
+    border-radius: 10px;
+    width: 90%;
+    height: 70%;
+  }
+  button {
+    margin-top: 10px;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    background: #3b82f6;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  .edge {
+    stroke: #64748b;
+    stroke-width: 2;
+    transition: stroke 0.3s;
+  }
+  .edge.visited {
+    stroke: #f59e0b;
+    stroke-width: 3;
+  }
+  .node circle {
+    fill: #0f172a;
+    stroke: #94a3b8;
+    stroke-width: 2;
+  }
+  .node text {
+    fill: white;
+    font-weight: bold;
+    font-size: 16px;
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+  <div class="panel" id="bfs-panel">
+    <h2>Обхід у ширину (BFS)</h2>
+    <svg id="bfs"></svg>
+    <button id="bfs-step">Крок</button>
+  </div>
+  <div class="panel" id="dfs-panel">
+    <h2>Обхід у глибину (DFS)</h2>
+    <svg id="dfs"></svg>
+    <button id="dfs-step">Крок</button>
+  </div>
+
+<script>
+// --- Визначення графа ---
+const nodes = {
+  a:{x:120,y:100}, b:{x:260,y:100}, c:{x:400,y:100},
+  d:{x:120,y:250}, e:{x:260,y:290}, f:{x:400,y:250}
+};
+
+// Додали ребра a–f і c–d
+const adj = {
+  a:['b','d','e','f'],
+  b:['a','c','d','e','f'],
+  c:['b','d','e','f'],
+  d:['a','b','c','e'],
+  e:['a','b','c','d','f'],
+  f:['a','b','c','e']
+};
+
+// --- Побудова графа ---
+function createGraph(svgId) {
+  const svg = document.getElementById(svgId);
+  const NS = 'http://www.w3.org/2000/svg';
+  const edgeEls = new Map();
+
+  // Створення ребер (без дублікатів)
+  for (const u in adj) {
+    for (const v of adj[u]) {
+      if (u < v) {
+        const line = document.createElementNS(NS, 'line');
+        line.setAttribute('x1', nodes[u].x);
+        line.setAttribute('y1', nodes[u].y);
+        line.setAttribute('x2', nodes[v].x);
+        line.setAttribute('y2', nodes[v].y);
+        line.setAttribute('class', 'edge');
+        svg.appendChild(line);
+        edgeEls.set(u+v, line);
+        edgeEls.set(v+u, line);
+      }
+    }
+  }
+
+  // Створення вершин
+  for (const n in nodes) {
+    const g = document.createElementNS(NS, 'g');
+    g.setAttribute('class', 'node');
+    const c = document.createElementNS(NS, 'circle');
+    c.setAttribute('cx', nodes[n].x);
+    c.setAttribute('cy', nodes[n].y);
+    c.setAttribute('r', 20);
+    const t = document.createElementNS(NS, 'text');
+    t.setAttribute('x', nodes[n].x - 5);
+    t.setAttribute('y', nodes[n].y + 5);
+    t.textContent = n.toUpperCase();
+    g.appendChild(c);
+    g.appendChild(t);
+    svg.appendChild(g);
+  }
+  return edgeEls;
+}
+
+const bfsEdges = createGraph('bfs');
+const dfsEdges = createGraph('dfs');
+
+// --- BFS ---
+function bfsSteps(start) {
+  const q = [start];
+  const visited = new Set([start]);
+  const steps = [];
+  while (q.length) {
+    const u = q.shift();
+    for (const v of adj[u]) {
+      if (!visited.has(v)) {
+        visited.add(v);
+        steps.push([u, v]);
+        q.push(v);
+      }
+    }
+  }
+  return steps;
+}
+
+// --- DFS ---
+function dfsSteps(start) {
+  const visited = new Set();
+  const steps = [];
+  function dfs(u) {
+    visited.add(u);
+    for (const v of adj[u]) {
+      if (!visited.has(v)) {
+        steps.push([u, v]);
+        dfs(v);
+      }
+    }
+  }
+  dfs(start);
+  return steps;
+}
+
+// --- Анімація ---
+const bfsOrder = bfsSteps('a');
+const dfsOrder = dfsSteps('a');
+let bfsIndex = 0, dfsIndex = 0;
+
+document.getElementById('bfs-step').onclick = () => {
+  if (bfsIndex < bfsOrder.length) {
+    const [u, v] = bfsOrder[bfsIndex++];
+    bfsEdges.get(u+v)?.classList.add('visited');
+  }
+};
+
+document.getElementById('dfs-step').onclick = () => {
+  if (dfsIndex < dfsOrder.length) {
+    const [u, v] = dfsOrder[dfsIndex++];
+    dfsEdges.get(u+v)?.classList.add('visited');
+  }
+};
+</script>
+</body>
+</html>
